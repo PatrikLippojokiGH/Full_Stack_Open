@@ -5,8 +5,10 @@ sequenceDiagram
     
     browser-->>server: POST https://studies.cs.helsinki.fi/exampleapp/new_note
     activate server
-    server-->>browser: redirect to /notes
+    server-->>browser: HTML document, location /exampleapp/notes
     deactivate server
+    
+    Note right of browser: Redirect to location
     
     browser->>server: GET https://studies.cs.helsinki.fi/exampleapp/notes
     activate server
