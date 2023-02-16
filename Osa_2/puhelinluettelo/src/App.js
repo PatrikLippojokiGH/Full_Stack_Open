@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import personService from './Services/persons'
 
 // Komponentit
 
@@ -6,15 +7,15 @@ const Persons = (props) => {
   return (
     <div>
       {props.personsToShow.map(person =>
-          <Person key={person.id} person={person} />
+          <Person key={person.id} person={person} remove={() => props.remove(person.id)}/>
         )}
       </div>
   )
 }
 
-const Person = ({person}) => {
+const Person = ({person, remove}) => {
   return (
-    <p>{person.name} {person.number}</p>
+    <p>{person.name} {person.number} <button onClick={remove}> delete</button></p>
   )
 }
 
@@ -54,32 +55,65 @@ const PersonFrom = (props) => {
 const App = () => {
 
   // Tarvittavien tilojen käsittely
-  const [persons, setPersons] = useState([
-    { id: 1, name: 'Arto Hellas', number: '040-123456' },
-    { id: 2, name: 'Ada Lovelace', number: '39-44-5323523' },
-    { id: 3, name: 'Dan Abramov', number: '12-43-234345' },
-    { id: 4, name: 'Mary Poppendieck', number: '39-23-6423122' }
-  ]) 
+  const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [newFilter, setNewFilter] = useState('')
+
+  // Tietojen haku JSON Serveriltä käynnistyessä
+  useEffect(() => {
+    personService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
+      })
+  }, [])
+  console.log('render', persons.length, 'persons info')
 
   const addPerson = (event) => {
     event.preventDefault()
     const personObject = {
       name: newName,
       number: newNumber,
-      id: persons.length + 1
     }
 
     if (persons.some(person => person.name === personObject.name)) { // Ei lisätä kahta saman nimistä
-      alert(`${newName} is already added to phonebook`)
-      return
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with the new one?`)) {
+        const duplicate = {...persons.find(person => person.name === personObject.name)} 
+        personService                                                // Jos halutaan antaa uusi numero olemassa olevalle henkilölle
+          .update(duplicate.id, personObject)
+          .then(returnedPerson => {
+            setPersons(persons.map(person => person.name !== duplicate.name ? person : returnedPerson))
+          })
+          .catch(error => {                                          // Jos oli jo poistettu
+            alert(
+              `the person '${duplicate.name}' was already deleted from server`
+            )
+            setPersons(persons.filter(n => n.id !== duplicate.id))
+          })
+          return
+      } else {
+        return                                                       // Jos halutaan pitää vanha numero, ei tehdä mitään
+      }
+      
     }
-    debugger
-    setPersons(persons.concat(personObject))
-    setNewName('')
-    setNewNumber('')
+
+    personService
+      .create(personObject)
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
+        setNewName('')
+        setNewNumber('')
+      })
+  }
+
+  const removePerson = id => {
+    const person = persons.find(p => p.id === id)
+    if (window.confirm(`Delete ${person.name}`)) {
+      personService
+      .remove(id)
+      .then(setPersons(persons.filter(p => p.id !== id)))
+    }
   }
 
   const handleNameChange = (event) => {
@@ -100,7 +134,7 @@ const App = () => {
   // Näytetään kaikki, jos filtteri tyhjä, muuten näytetään nimen mukaan filtteröidyt
   const personsToShow = newFilter.length < 0
   ? persons
-  : persons.filter(person => person.name.toLowerCase().includes(newFilter.toLocaleLowerCase()))
+  : persons.filter(person => person.name.toLowerCase().includes(newFilter.toLowerCase()))
   
 
 
@@ -113,7 +147,7 @@ const App = () => {
       <PersonFrom onSubmit={addPerson} name={newName} nameChange={handleNameChange} number={newNumber} numChange={handleNumberChange} />
 
       <h2>Numbers</h2>
-      <Persons personsToShow={personsToShow} />
+      <Persons personsToShow={personsToShow} remove={removePerson} />
     </div>
   )
 
