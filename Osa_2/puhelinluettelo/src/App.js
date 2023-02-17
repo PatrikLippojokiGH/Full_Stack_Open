@@ -3,6 +3,35 @@ import personService from './Services/persons'
 
 // Komponentit
 
+const Notification = ({message, style}) => {
+  if (message === null) {
+    return null
+  }
+
+  if (style === 'error') {
+    return (
+    <div className={"error"}>
+      {message}
+    </div>
+  )
+  }
+
+  if (style === 'change') {
+    return (
+    <div className={"change"}>
+      {message}
+    </div>
+  )
+  }
+
+  return (
+    <div className={"message"}>
+      {message}
+    </div>
+  )
+  
+}
+
 const Persons = (props) => {
   return (
     <div>
@@ -59,6 +88,8 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [newFilter, setNewFilter] = useState('')
+  const [message, setMessage] = useState(null) // Virheviesti
+  const [messageStyle, setStyle] = useState(null) // Virheviestin tyyli 
 
   // Tietojen haku JSON Serveriltä käynnistyessä
   useEffect(() => {
@@ -84,12 +115,29 @@ const App = () => {
           .update(duplicate.id, personObject)
           .then(returnedPerson => {
             setPersons(persons.map(person => person.name !== duplicate.name ? person : returnedPerson))
-          })
-          .catch(error => {                                          // Jos oli jo poistettu
-            alert(
-              `the person '${duplicate.name}' was already deleted from server`
+            setNewName('')
+            setNewNumber('')
+            setMessage(
+              `Number of '${returnedPerson.name}' was changed to ${returnedPerson.number}`
             )
+            setStyle('change')
+            setTimeout(() => {
+              setMessage(null)
+              setStyle(null)
+            }, 5000)
+          })
+          .catch(error => {                                         // Jos oli jo poistettu
+            setMessage(
+              `Information of the person '${duplicate.name}' has been deleted from server`
+            )
+            setStyle('error')
+            setTimeout(() => {
+              setMessage(null)
+              setStyle(null)
+            }, 5000)
             setPersons(persons.filter(n => n.id !== duplicate.id))
+            setNewName('')
+            setNewNumber('')
           })
           return
       } else {
@@ -104,6 +152,14 @@ const App = () => {
         setPersons(persons.concat(returnedPerson))
         setNewName('')
         setNewNumber('')
+        setMessage(
+          `'${personObject.name}' added to server`
+        )
+        setStyle()
+        setTimeout(() => {
+          setMessage(null)
+          setStyle(null)
+        }, 5000)
       })
   }
 
@@ -112,7 +168,17 @@ const App = () => {
     if (window.confirm(`Delete ${person.name}`)) {
       personService
       .remove(id)
-      .then(setPersons(persons.filter(p => p.id !== id)))
+      .then(() => {
+        setPersons(persons.filter(p => p.id !== id))
+        setMessage(
+          `'${person.name}' removed from server`
+        )
+        setStyle('error')
+        setTimeout(() => {
+          setMessage(null)
+          setStyle(null)
+        }, 5000)
+      })
     }
   }
 
@@ -141,6 +207,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={message} style={messageStyle}/>
       <Filter value={newFilter} onChange={handleFilterChange} />
 
       <h2>add a new</h2>
