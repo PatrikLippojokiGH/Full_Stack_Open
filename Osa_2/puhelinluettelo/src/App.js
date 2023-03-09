@@ -128,16 +128,17 @@ const App = () => {
           })
           .catch(error => {                                         // Jos oli jo poistettu
             setMessage(
-              `Information of the person '${duplicate.name}' has been deleted from server`
+              `${error.response.data.error}`
             )
             setStyle('error')
             setTimeout(() => {
               setMessage(null)
               setStyle(null)
             }, 5000)
-            setPersons(persons.filter(n => n.id !== duplicate.id))
+            // setPersons(persons.filter(n => n.id !== duplicate.id))
             setNewName('')
             setNewNumber('')
+            console.log(error.response.data)
           })
           return
       } else {
@@ -156,6 +157,18 @@ const App = () => {
           `'${personObject.name}' added to server`
         )
         setStyle()
+        setTimeout(() => {
+          setMessage(null)
+          setStyle(null)
+        }, 5000)
+      })
+      .catch(error => {
+        // pääset käsiksi palvelimen palauttamaan virheilmoitusolioon näin
+        console.log(error.response.data)
+        setMessage(
+          `${error.response.data.error}`
+        )
+        setStyle('error')
         setTimeout(() => {
           setMessage(null)
           setStyle(null)
