@@ -1,7 +1,9 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
-const User = require('../models/user')
+/*const User = require('../models/user')*/
 const middleware = require('../utils/middleware')
+
+const logger = require('../utils/logger')
 
 blogsRouter.get('/', async (request, response) => {
   // console.log("getting blogs")
@@ -10,22 +12,24 @@ blogsRouter.get('/', async (request, response) => {
 })
 
 blogsRouter.post('/', middleware.userExtractor, async (request, response) => {
-  const body = request.body
+  const { title, author, url, likes } = request.body
+  const blog = new Blog({
+    title, author, url, 
+    likes: likes ? likes : 0
+  })
 
-  if (body.title === undefined || body.url === undefined) {
+  /*if (body.title === undefined || body.url === undefined) {
     response.status(400).end()
-  }
+  }*/
   
   const user = request.user
-  console.log(user._id)
+  logger.info(user)
 
-  const blog = new Blog({
-    title: body.title,
-    author: body.author,
-    url: body.url,
-    likes: body.likes,
-    user: user._id
-  })
+  if (!user) {
+    return response.status(401).json({ error: 'operation not permitted' })
+  }
+
+  blog.user = user._id  
 
   const savedBlog = await blog.save()
 
@@ -54,19 +58,10 @@ blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) =
 })
 
 blogsRouter.put('/:id', async (request, response) => {
-  const body = request.body
+  const { title, url, author, likes } = request.body
 
-  const user = await User.findById(body.userId) // Muuta
+  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id,  { title, url, author, likes }, { new: true })
 
-  const blog = {
-    title: body.title,
-    author: body.author,
-    url: body.url,
-    likes: body.likes,
-    user: user._id
-  }
-
-  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
   response.json(updatedBlog)
 })
 

@@ -41,22 +41,26 @@ const tokenExtractor = (request, response, next) => {
   next()
 }
 
-const userExtractor = async (request, response, next) => {
-  logger.info("extracting user")
-  try {
-    const decodedToken = jwt.verify(request.token, process.env.SECRET)
-    logger.info(decodedToken)
-    if (!decodedToken.id) {
-      request.user = null
-      logger.info("extracting user problem")
-      return response.status(401).json({ error: 'token invalid' })
-    } else {
-      request.user = await User.findById(decodedToken.id)
-    }
-  } catch (err) {
-    return response.status(401).json({ error: 'token missing or invalid' })
+const getTokenFrom = request => {
+  const authorization = request.get('authorization')
+  if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
+    return authorization.substring(7)
   }
-  
+  return null
+}
+
+const userExtractor = async (request, response, next) => {
+  logger.info("extracting user") // oma lisäys
+  const token = getTokenFrom(request)
+  logger.info(token)
+  if (token) {
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+    if (!decodedToken.id) {
+      return response.status(401).json({ error: 'token invalid' })
+    }
+    logger.info(decodedToken)  // oma lisäys
+    request.user = await User.findById(decodedToken.id)
+  }  
   
   logger.info("ok")
   next()
