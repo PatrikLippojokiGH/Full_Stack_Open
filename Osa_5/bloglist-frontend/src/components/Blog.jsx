@@ -38,7 +38,7 @@ const Blog = ({ blog, loggedUser, likeBlog, deleteBlog }) => {
 
   if (!state) {
     return (
-      <div style={blogStyle}>
+      <div style={blogStyle} className='blog'>
         <div>
           {blog.title} {blog.author} <button onClick={toggleState}>view</button>
         </div>
@@ -47,7 +47,7 @@ const Blog = ({ blog, loggedUser, likeBlog, deleteBlog }) => {
 
   if (blog.user.name === loggedUser.name){
     return (
-      <div style={blogStyle}>
+      <div style={blogStyle} className='blog'>
         <div>
           {blog.title} {blog.author} <button onClick={toggleState}>hide</button>
           <div>
@@ -67,7 +67,7 @@ const Blog = ({ blog, loggedUser, likeBlog, deleteBlog }) => {
     )}
 
   return (
-    <div style={blogStyle}>
+    <div style={blogStyle} className='blog'>
       <div>
         {blog.title} {blog.author} <button onClick={toggleState}>hide</button>
         <div>
